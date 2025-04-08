@@ -3,6 +3,8 @@ import { Button } from "../Button";
 import React, { useState } from 'react';
 import { useNavigate } from "react-router";
 import { FaRegEye,  FaRegEyeSlash } from "react-icons/fa";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export const Form = ({ isSignInPage = true }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -38,22 +40,23 @@ export const Form = ({ isSignInPage = true }) => {
       const resData = await res.json();
       console.log('result', resData);
       if (res.status === 400) {
-        alert('Invalid Credentials');
+        toast.error("Invalid Credentials");
       } else {
         if (resData.token && isSignInPage) {
           localStorage.setItem('user:token', resData.token);
           localStorage.setItem('user:detail', JSON.stringify(resData.user));
           navigate('/');
         } else if (!isSignInPage && res.status === 200) {
-          alert('Registered successfully. Please sign in.');
+          toast.success("Registered successfully. Please sign in!");
           navigate('/sign-in');
         } else {
-          alert(resData.message || 'Error processing request');
+          toast.error(resData.message || 'Error processing request');
         }
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('An error occurred');
+      toast.error('An error occurred');
+
     }
   };
 
@@ -138,6 +141,13 @@ export const Form = ({ isSignInPage = true }) => {
             </div>
           </div>
         </div>
+        <ToastContainer
+              position="top-center" 
+              autoClose={2000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+            />
       </div>
   );
 };
