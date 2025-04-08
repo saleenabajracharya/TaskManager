@@ -1,0 +1,13 @@
+@import "tailwindcss";
+:root {
+  --primary-color: #1476ff;
+  --primary-light:#f9faff;
+  --secondary-color: #f3f5ff;
+}
+body {
+  background-color: var(--secondary-color);
+}
+
+.status-header{
+  color: #5d5d5d;
+}
