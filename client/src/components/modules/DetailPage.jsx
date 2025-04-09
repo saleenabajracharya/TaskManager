@@ -7,6 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 export const DetailPage = () => {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user:detail"));
   const { taskId } = useParams(); // Get task ID from the URL
   const [task, setTask] = useState(null); // State to hold task data
   const [showModal, setShowModal] = useState(false); // State to control modal visibility
@@ -25,18 +26,18 @@ export const DetailPage = () => {
     const fetchTaskDetail = async () => {
       const res = await fetch(`${apiUrl}/task/${taskId}`);
       const taskData = await res.json();
-      setTask(taskData); // Set the task data
+      setTask(taskData); 
       setFormData({
         title: taskData.title,
         description: taskData.description,
         status: taskData.status,
-        userId: taskData.userId,
+        userId: user.id,
         taskId: taskData.id,
       });
     };
 
     fetchTaskDetail();
-  }, [taskId]); // Depend on taskId to refetch when it changes
+  }, [taskId]); 
 
   // Handle form input change to update form data
   const handleChange = (e) => {
@@ -51,13 +52,18 @@ export const DetailPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const updatedFormData = {
+        ...formData,
+        taskId: taskId, 
+      };
+
     try {
       const res = await fetch(`${apiUrl}/tasks/${taskId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData), // Send updated form data
+        body: JSON.stringify(updatedFormData), 
       });
 
       if (!res.ok) {
@@ -65,12 +71,12 @@ export const DetailPage = () => {
       }
 
       const updatedTask = await res.json();
-      setTask(updatedTask); // Update the task state with new data
-      setShowModal(false); // Close the modal
-      toast.success("Task updated successfully!"); // Show success message
+      setTask(updatedTask); 
+      setShowModal(false); 
+      toast.success("Task updated successfully!"); 
     } catch (error) {
       console.error("Error updating task:", error);
-      toast.error("Something went wrong while updating the task."); // Show error message
+      toast.error("Something went wrong while updating the task."); 
     }
   };
 
@@ -88,12 +94,12 @@ export const DetailPage = () => {
         throw new Error("Failed to delete task");
       }
 
-      setTask(null); // Clear the task state
-      toast.success("Task deleted successfully!"); // Show success message
-      navigate("/"); // Redirect to the home page after deletion
+      setTask(null); 
+      toast.success("Task deleted successfully!"); 
+      navigate("/");
     } catch (error) {
       console.error("Error deleting task:", error);
-      toast.error("Something went wrong while deleting the task."); // Show error message
+      toast.error("Something went wrong while deleting the task."); 
     }
   };
 
