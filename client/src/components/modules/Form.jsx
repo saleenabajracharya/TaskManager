@@ -45,7 +45,7 @@ export const Form = ({ isSignInPage = true }) => {
       );
 
       const resData = await res.json();  
-      console.log("result", resData);
+
 
       if (res.status === 400) {
         toast.error("Invalid Credentials");  

@@ -21,7 +21,6 @@ export const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const apiUrl = import.meta.env.VITE_API_URL;
-console.log("API URL: ", import.meta.env.VITE_API_URL);
 
   // Function to fetch tasks from the backend
   const fetchTasks = async () => {
