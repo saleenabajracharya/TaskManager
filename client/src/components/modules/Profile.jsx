@@ -3,6 +3,7 @@ import { Layout } from "../Layout/Layout";
 import { FaUserCircle } from "react-icons/fa";
 
 export const Profile = () => {
+   // Getting the user details from local storage
   const user = JSON.parse(localStorage.getItem('user:detail'));
 
   return (

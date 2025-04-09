@@ -1,13 +1,15 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// Creating a slice for search functionality
 export const searchSlice = createSlice({
-  name: 'search',
+  name: 'search',  
   initialState: {
-    query: '',
+    query: '', 
   },
   reducers: {
+    // Reducer to update the search query
     setSearchQuery: (state, action) => {
-      state.query = action.payload;
+      state.query = action.payload;  
     },
   },
 });

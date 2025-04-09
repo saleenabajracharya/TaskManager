@@ -1,59 +1,63 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom"; 
+import { useParams, useNavigate } from "react-router-dom";
 import { Layout } from "../Layout/Layout";
-import { FiEdit, FiTrash2  } from "react-icons/fi";
+import { FiEdit, FiTrash2 } from "react-icons/fi";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export const DetailPage = () => {
-    const navigate = useNavigate();
-  const { taskId } = useParams(); 
-  const [task, setTask] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
+  const { taskId } = useParams(); // Get task ID from the URL
+  const [task, setTask] = useState(null); // State to hold task data
+  const [showModal, setShowModal] = useState(false); // State to control modal visibility
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     status: "To Do",
     userId: "",
-    taskId: "", 
+    taskId: "",
   });
 
+  const apiUrl = import.meta.env.VITE_API_URL;
+
+  // Fetch task details on component mount or when taskId changes
   useEffect(() => {
     const fetchTaskDetail = async () => {
-      const res = await fetch(`http://localhost:5000/task/${taskId}`);
+      const res = await fetch(`${apiUrl}/task/${taskId}`);
       const taskData = await res.json();
-      setTask(taskData); 
+      setTask(taskData); // Set the task data
       setFormData({
         title: taskData.title,
         description: taskData.description,
         status: taskData.status,
         userId: taskData.userId,
-        taskId: taskData.id
+        taskId: taskData.id,
       });
     };
 
     fetchTaskDetail();
-  }, [taskId]);
+  }, [taskId]); // Depend on taskId to refetch when it changes
 
+  // Handle form input change to update form data
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: value,
     });
   };
 
-
+  // Handle task update (submit edited form)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await fetch(`http://localhost:5000/tasks/${taskId}`, {
-        method: "PUT", 
+      const res = await fetch(`${apiUrl}/tasks/${taskId}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(formData), // Send updated form data
       });
 
       if (!res.ok) {
@@ -61,45 +65,42 @@ export const DetailPage = () => {
       }
 
       const updatedTask = await res.json();
-      setTask(updatedTask); 
-      setShowModal(false);  
-      toast.success("Task updated successfully!");
+      setTask(updatedTask); // Update the task state with new data
+      setShowModal(false); // Close the modal
+      toast.success("Task updated successfully!"); // Show success message
     } catch (error) {
       console.error("Error updating task:", error);
-      toast.error("Something went wrong while updating the task.");
+      toast.error("Something went wrong while updating the task."); // Show error message
     }
   };
 
+  // Handle task deletion
   const handleDelete = async (taskId) => {
     try {
-      const res = await fetch(`http://localhost:5000/tasks/${taskId}`, {
+      const res = await fetch(`${apiUrl}/tasks/${taskId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
       });
-  
+
       if (!res.ok) {
         throw new Error("Failed to delete task");
       }
-  
-      setTask(null); // Clear the task
-      toast.success("Task deleted successfully!");
-  
 
-      navigate("/"); 
-  
+      setTask(null); // Clear the task state
+      toast.success("Task deleted successfully!"); // Show success message
+      navigate("/"); // Redirect to the home page after deletion
     } catch (error) {
       console.error("Error deleting task:", error);
-      toast.error("Something went wrong while deleting the task.");
+      toast.error("Something went wrong while deleting the task."); // Show error message
     }
   };
-  
 
   return (
     <Layout>
       <div className="task-detail-container bg-white m-3 p-2 ">
-      {task && (
+        {task && (
           <>
             <div className="d-flex justify-content-between">
               <h3 className="fs-4 fw-extrabold px-3 mt-2">{task.title}</h3>
@@ -110,10 +111,8 @@ export const DetailPage = () => {
                     task.status === "Done"
                       ? "bg-success"
                       : task.status === "On Hold"
-                      ? "bg-danger"
-                      : task.status === "To Do"
-                      ? "bg-secondary"
-                      : "bg-info"
+                      ? "bg-danger"            
+                      : "bg-primary"
                   }`}
                 >
                   {task.status}
@@ -124,28 +123,34 @@ export const DetailPage = () => {
             <label className="px-3 text-secondary mb-2" htmlFor="Description">
               Description:
             </label>
-              <p className="px-3 text-secondary">{task.description}</p>
-              <div className="d-flex justify-content-end mb-3">
+            <p className="px-3 text-secondary">{task.description}</p>
+
+            <div className="d-flex justify-content-end mb-3">
+              {/* Button to open the modal for editing */}
               <button
                 className="btn btn-primary btn-sm d-flex align-items-center me-3 mt-2"
-                onClick={() => setShowModal(true)} 
+                onClick={() => setShowModal(true)}
               >
                 <span className="me-2 text-white">Edit</span>
                 <FiEdit className="text-white" style={{ cursor: "pointer" }} />
               </button>
+              {/* Button to delete the task */}
               <button
                 className="btn btn-danger d-flex btn-sm align-items-center me-3 mt-2"
-                 onClick={() => handleDelete(task.id)}
+                onClick={() => handleDelete(task.id)}
               >
                 <span className="me-2">Delete</span>
-                <FiTrash2  className="text-white" style={{ cursor: "pointer" }} />
+                <FiTrash2
+                  className="text-white"
+                  style={{ cursor: "pointer" }}
+                />
               </button>
-              </div>
+            </div>
           </>
         )}
       </div>
 
-      {/* Modal editing */}
+      {/* Modal for editing task */}
       {showModal && (
         <div className="modal d-block" style={{ display: "block" }}>
           <div className="modal-dialog">
@@ -192,7 +197,6 @@ export const DetailPage = () => {
                     >
                       <option>To Do</option>
                       <option>In Progress</option>
-                      <option>On Hold</option>
                       <option>Done</option>
                     </select>
                   </div>
@@ -207,13 +211,17 @@ export const DetailPage = () => {
           </div>
         </div>
       )}
+
+      {/* Toast notification container */}
       <ToastContainer
-              position="top-center" 
-              autoClose={2000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-            />
+        position="top-center"
+        autoClose={1200}
+        hideProgressBar={true}
+        newestOnTop={false}
+        closeOnClick
+        closeButton={true}
+        toastClassName="custom-toast"
+      />
     </Layout>
   );
 };

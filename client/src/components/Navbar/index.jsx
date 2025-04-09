@@ -5,17 +5,22 @@ import { useDispatch } from 'react-redux';
 import { setSearchQuery } from '../../redux/SearchSlice';
 
 export const Navbar = () => {
-    const navigate = useNavigate();
-    const dispatch = useDispatch();
+  const navigate = useNavigate();  
+  const dispatch = useDispatch(); 
+  
+    // Handling changes in the search input
     const handleSearchChange = (e) => {
-      dispatch(setSearchQuery(e.target.value));
+      dispatch(setSearchQuery(e.target.value));  // Dispatch action to update search query
     };
+    
+    // Function to log out the user
     const logout = () => {
-        localStorage.clear('users');
-        navigate("/sign-in")
+        localStorage.clear('users');  
+        navigate("/sign-in");  
     }
 
-    const user = JSON.parse(localStorage.getItem('user:detail'));
+    // Fetching user details from local storage
+    const user = JSON.parse(localStorage.getItem('user:detail')); 
     
   return (
     <>
@@ -38,7 +43,7 @@ export const Navbar = () => {
       </form>
       <div className="dropdown me-3 border rounded" style={{cursor:"pointer"}}>
         <button className="btn  dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            {user.name}
+            {user?.name}
         </button>
         <div className="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
             <Link to="/profile" className="dropdown-item">Profile</Link>

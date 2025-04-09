@@ -1,4 +1,6 @@
 @import "tailwindcss";
+
+
 :root {
   --primary-color: #1476ff;
   --primary-light:#f9faff;
@@ -10,4 +12,26 @@ body {
 
 .status-header{
   color: #5d5d5d;
+}
+
+@keyframes customSlideInLeft {
+  0% {
+    transform: translateX(-30px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.custom-slide-in {
+  animation: customSlideInLeft 0.4s ease-out both;
+}
+
+
+.custom-toast {
+  width: 400px !important;
+  margin: auto;
+  text-align: center;
 }

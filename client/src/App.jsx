@@ -39,14 +39,10 @@ function App() {
             </ProtectedRoutes>
           }
         />
-        <Route
-          path='/'
-          element={
-            
-              <Dashboard />
-           
-          }
-        />
+        <Route path = '/' element = {
+        <ProtectedRoutes auth={true}> 
+        <Dashboard/>
+        </ProtectedRoutes>}/>
         <Route path='/*' element={<NoPage/>} />
         <Route path='/profile' element={<Profile/>} />
         <Route path="/task/:taskId" element={<DetailPage/>} />

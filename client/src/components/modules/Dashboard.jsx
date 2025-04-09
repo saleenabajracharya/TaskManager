@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { FiEdit, FiTrash2 } from "react-icons/fi";
 import { Layout } from "../Layout/Layout";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -7,6 +6,7 @@ import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 export const Dashboard = () => {
+  // Local state to manage modal visibility, form data, tasks, and loading state
   const user = JSON.parse(localStorage.getItem("user:detail"));
   const [showModal, setShowModal] = useState(false);
   const searchQuery = useSelector((state) => state.search.query);
@@ -20,12 +20,15 @@ export const Dashboard = () => {
 
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const apiUrl = import.meta.env.VITE_API_URL;
+console.log("API URL: ", import.meta.env.VITE_API_URL);
 
+  // Function to fetch tasks from the backend
   const fetchTasks = async () => {
     try {
       const userId = user.id;
       setTimeout(async () => {
-        const res = await fetch(`http://localhost:5000/tasks/${userId}`, {
+        const res = await fetch(`${apiUrl}/tasks/${userId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -47,30 +50,27 @@ export const Dashboard = () => {
     }
   };
 
+  // useEffect to fetch tasks
   useEffect(() => {
     fetchTasks();
   }, []);
 
+  // Filter tasks based on search query (title or description)
   const filteredTasks = tasks.filter((task) =>
     (task.title?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
     (task.description?.toLowerCase() || "").includes(searchQuery.toLowerCase())
   );
   
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
+  // Handle task form submission to create new task
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const user = JSON.parse(localStorage.getItem("user:detail"));
       const userId = user?.id;
       const formDataWithUser = { ...formData, userId };
 
       let res;
-        res = await fetch(`http://localhost:5000/tasks`, {
+        res = await fetch(`${apiUrl}/tasks`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -105,7 +105,7 @@ export const Dashboard = () => {
             <div className="d-flex justify-content-between align-items-center p-3 w-100">
               <div className="m-4">
                 <h3 className=" mb-2 fw-extrabold">
-                  Hello, {user.name.split(" ")[0]}!
+                  Hello, {user?.name.split(" ")[0]}!
                 </h3>
                 <h5 className="mb-0 text-muted">Let's start work.</h5>
               </div>
@@ -120,7 +120,7 @@ export const Dashboard = () => {
             {/* Task Categories */}
             <div
               className="container"
-              style={{ maxHeight: "450px", overflowY: "auto" }}
+              style={{ maxHeight: "440px", overflowY: "auto" }}
             >
               <div className="row gy-3 w-100 px-4 pb-4">
                 {/* To Do Tasks */}
@@ -322,13 +322,6 @@ export const Dashboard = () => {
                     </div>
                   </div>
                   <div className="modal-footer">
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => setShowModal(false)}
-                    >
-                      Close
-                    </button>
                     <button type="submit" className="btn btn-primary">
                       {formData.id ? "Update Task" : "Create Task"}
                     </button>
@@ -339,17 +332,13 @@ export const Dashboard = () => {
           </div>
         )}
       </div>
-      <ToastContainer
-        position="top-center" 
-        autoClose={2000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+      <ToastContainer position="top-center" 
+              autoClose={1200} 
+              hideProgressBar={true}  
+              newestOnTop={false}
+              closeOnClick                     
+              closeButton={true}             
+              toastClassName="custom-toast"/>
           </Layout>
   );
 };
