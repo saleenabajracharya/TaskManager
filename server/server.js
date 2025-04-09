@@ -1,210 +1,175 @@
 const express = require('express');
-const mysql = require('mysql2');
+const { Pool } = require('pg'); 
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 
-// Initialize dotenv
 dotenv.config();
 
 const app = express();
-app.use(express.json()); 
+app.use(express.json());
 app.use(cors());
 
-// MySQL connection
-const db = mysql.createConnection({
+// PostgreSQL pool connection
+const db = new Pool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT, 
+  ssl: {
+    rejectUnauthorized: false,  
+  },
 });
 
-// Connect to MySQL
-db.connect((err) => {
-  if (err) {
-    console.error('Error connecting to MySQL: ', err);
-    return;
-  }
-  console.log('Connected to MySQL database!');
-});
 
 // Register endpoint
 app.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
-  db.query('SELECT * FROM users WHERE email = ?', [email], async (err, result) => {
-    if (err) {
-      return res.status(500).json({ message: 'Database error' });
-    }
+  try {
+    const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
 
-    if (result.length > 0) {
+    if (result.rows.length > 0) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const query = 'INSERT INTO users (name, email, password) VALUES (?, ?, ?)';
-    db.query(query, [name, email, hashedPassword], (err, result) => {
-      if (err) {
-        return res.status(500).json({ message: 'Error creating user' });
-      }
-      res.status(200).json({ message: 'User registered successfully' });
-    });
-  });
+    await db.query(
+      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
+      [name, email, hashedPassword]
+    );
+    res.status(200).json({ message: 'User registered successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Database error' });
+  }
 });
 
 // Login endpoint
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
-  db.query('SELECT * FROM users WHERE email = ?', [email], (err, result) => {
-    if (err) {
-      return res.status(500).json({ message: 'Database error' });
-    }
+  try {
+    const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
 
-    if (result.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const user = result[0];
+    const user = result.rows[0];
 
-    bcrypt.compare(password, user.password, (err, isMatch) => {
-      if (err) {
-        return res.status(500).json({ message: 'Error comparing passwords' });
-      }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
 
-      if (!isMatch) {
-        return res.status(400).json({ message: 'Invalid credentials' });
-      }
-
-      // Create JWT token
-      const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRATION,
-      });
-
-      res.status(200).json({user : { id:user.id, email : user.email, name: user.name}, token: token})
+    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRATION,
     });
-  });
+
+    res.status(200).json({ user: { id: user.id, email: user.email, name: user.name }, token });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Database error' });
+  }
 });
 
-// Middleware to verify JWT token
+// Middleware for JWT
 const authenticateToken = (req, res, next) => {
   const token = req.header('Authorization')?.split(' ')[1];
-
-  if (!token) {
-    return res.status(403).json({ message: 'Access denied' });
-  }
+  if (!token) return res.status(403).json({ message: 'Access denied' });
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'Invalid token' });
-    }
+    if (err) return res.status(403).json({ message: 'Invalid token' });
     req.user = user;
     next();
   });
 };
 
-//Add a new task
-app.post('/tasks', async (req,  res, next) =>{
-    try{
-        const { title, description, status, userId } = req.body;
-        const query = 'INSERT INTO tasks (title, description, status, userId) VALUES (?, ?, ?, ?)';
-        db.query(query, [title, description, status, userId], (err, result) => {
-        if (err) {
-            return res.status(500).json({ message: 'Error creating task' });
-        }
-      res.status(200).json({ message: 'Task created successfully' });
-    });
-    }catch(error){
-        console.log("Error:",error);
-    }
-
-})
-
-
-//Fetch the user's tasks
-app.get('/tasks/:userId', async (req, res) => {
-    try {
-        const userId = parseInt(req.params.userId);
-        const query = 'SELECT * FROM tasks where userId = ?';
-        db.query(query, [userId], (err, result) => {
-          if (err) {
-              return res.status(500).json({ message: 'Error fetching tasks' });
-          }
-
-          if (result.length === 0) {
-              return res.status(404).json({ message: 'No tasks found for the user' });
-          }
-
-          res.status(200).json(result);
-        });
-    } catch (error) {
-        console.log("Error:", error);
-        res.status(500).json({ message: 'Server error' });
-    }
+// Add a new task
+app.post('/tasks', async (req, res) => {
+  const { title, description, status, userId } = req.body;
+  try {
+    await db.query(
+      'INSERT INTO tasks (title, description, status, userId) VALUES ($1, $2, $3, $4)',
+      [title, description, status, userId]
+    );
+    res.status(200).json({ message: 'Task created successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error creating task' });
+  }
 });
 
-app.put("/tasks/:id", async (req, res) => {
-  const taskId = req.params.id;
+// Fetch tasks for a user
+app.get('/tasks/:userId', async (req, res) => {
+  const userId = parseInt(req.params.userId);
+  try {
+    const result = await db.query('SELECT * FROM tasks WHERE userId = $1', [userId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'No tasks found for the user' });
+    }
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error fetching tasks' });
+  }
+});
+
+// Get task by ID
+app.get('/task/:id', async (req, res) => {
+  const taskId = parseInt(req.params.id);
+  try {
+    const result = await db.query('SELECT * FROM tasks WHERE id = $1', [taskId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    res.status(200).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error fetching task details' });
+  }
+});
+
+// Update task
+app.put('/tasks/:id', async (req, res) => {
+  const taskId = parseInt(req.params.id);
   const { title, description, status, userId } = req.body;
 
-  const query = `
-    UPDATE tasks 
-    SET title = ?, description = ?, status = ?, userId = ?
-    WHERE id = ?
-  `;
-  db.query(query, [title, description, status, userId, taskId], (err, result) => {
-    if (err) {
-      return res.status(500).json({ message: "Error updating task" });
-    }
+  try {
+    const result = await db.query(
+      'UPDATE tasks SET title = $1, description = $2, status = $3, userId = $4 WHERE id = $5',
+      [title, description, status, userId, taskId]
+    );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Task not found" });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Task not found' });
     }
 
     res.status(200).json({ id: taskId, title, description, status, userId });
-  });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error updating task' });
+  }
 });
 
-
-app.delete("/tasks/:id", async (req, res) => {
-  const taskId = req.params.id;
-
-  const query = "DELETE FROM tasks WHERE id = ?";
-  db.query(query, [taskId], (err, result) => {
-    if (err) {
-      return res.status(500).json({ message: "Error deleting task" });
+// Delete task
+app.delete('/tasks/:id', async (req, res) => {
+  const taskId = parseInt(req.params.id);
+  try {
+    const result = await db.query('DELETE FROM tasks WHERE id = $1', [taskId]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Task not found' });
     }
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Task not found" });
-    }
-
-    res.status(200).json({ message: "Task deleted successfully" });
-  });
+    res.status(200).json({ message: 'Task deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error deleting task' });
+  }
 });
-
-app.get("/task/:id", (req, res) => {
-  const taskId = req.params.id;
-  
-  const query = "SELECT * FROM tasks WHERE id = ?";
-  db.query(query, [taskId], (err, result) => {
-    if (err) {
-      return res.status(500).json({ message: "Error fetching task details" });
-    }
-
-    if (result.length === 0) {
-      return res.status(404).json({ message: "Task not found" });
-    }
-
-    res.status(200).json(result[0]); 
-  });
-});
-
-
-
 
 // Start the server
 app.listen(5000, () => {
-  console.log('Server running!');
+  console.log('Server running on port 5000');
 });
