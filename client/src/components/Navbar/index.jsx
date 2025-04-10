@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import { FiSearch } from "react-icons/fi";
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { setSearchQuery } from '../../redux/SearchSlice';
+import { setSearchQuery, clearSearchQuery } from '../../redux/SearchSlice';
 
 export const Navbar = () => {
   const navigate = useNavigate();  
@@ -25,7 +25,7 @@ export const Navbar = () => {
   return (
     <>
          <nav className="navbar border-0 w-100 px-3 " style={{backgroundColor:"var(--secondary-color)", position:"sticky"}}>
-         <Link className="navbar-brand fw-bold fs-2 mx-3 text-info" to="/">TaskPilot</Link>
+         <Link className="navbar-brand fw-bold fs-2 mx-3 text-info" to="/" onClick={() => dispatch(clearSearchQuery())}>TaskPilot</Link>
       <form className="d-flex my-2 my-lg-0 mx-2">
       <div className="input-group rounded-pill border px-3 py-2 bg-white">
       <span className="input-group-text bg-transparent border-0 p-0 pe-2">

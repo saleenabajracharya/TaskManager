@@ -4,6 +4,7 @@ import { Layout } from "../Layout/Layout";
 import { FiEdit, FiTrash2 } from "react-icons/fi";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { clearSearchQuery } from "../../redux/SearchSlice";
 
 export const DetailPage = () => {
   const navigate = useNavigate();
@@ -19,6 +20,10 @@ export const DetailPage = () => {
     taskId: "",
   });
 
+  const handleNavigate = () => {
+        dispatch(clearSearchQuery());
+        navigate("/");
+      };
   const apiUrl = import.meta.env.VITE_API_URL;
 
   // Fetch task details on component mount or when taskId changes

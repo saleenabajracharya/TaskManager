@@ -4,6 +4,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { clearSearchQuery } from "../../redux/SearchSlice";
 
 export const Dashboard = () => {
   // Local state to manage modal visibility, form data, tasks, and loading state
@@ -22,6 +23,7 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const apiUrl = import.meta.env.VITE_API_URL;
 
+  
   // Function to fetch tasks from the backend
   const fetchTasks = async () => {
     try {
